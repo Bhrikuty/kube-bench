@@ -36,7 +36,8 @@ var nodeCmd = &cobra.Command{
 		filename := loadConfig(check.NODE, bv)
 		runChecks(check.NODE, filename)
 		writeOutput(controlsCollection)
-	}
+	},
+	Deprecated: "this command will be retired soon. Please use the `run` command with `--targets=node` instead.",
 }
 
 func init() {

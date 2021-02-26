@@ -264,9 +264,59 @@ func (controls *Controls) ASFF() ([]*securityhub.AwsSecurityFinding, error) {
 							Type: aws.String(TYPE),
 						},
 					},
+					Compliance: &securityhub.Compliance{
+						Status:   aws.String(securityhub.ComplianceStatusFailed),
+		},
 				}
 				fs = append(fs, &f)
 			}
+
+			if check.State == PASS {
+				// ASFF ProductFields['Actual result'] can't be longer than 1024 characters
+				actualValue := check.ActualValue
+				if len(check.ActualValue) > 1024 {
+					actualValue = check.ActualValue[0:1023]
+				}
+				f := securityhub.AwsSecurityFinding{
+					AwsAccountId:  aws.String(a),
+					Confidence:    aws.Int64(100),
+					GeneratorId:   aws.String(fmt.Sprintf("%s/cis-kubernetes-benchmark/%s/%s", arn, controls.Version, check.ID)),
+					Id:            aws.String(fmt.Sprintf("%s%sEKSnodeID+%s%s", arn, a, check.ID, tf)),
+					CreatedAt:     aws.String(tf),
+					Description:   aws.String(check.Text),
+					ProductArn:    aws.String(arn),
+					SchemaVersion: aws.String(SCHEMA),
+					Title:         aws.String(fmt.Sprintf("%s %s", check.ID, check.Text)),
+					UpdatedAt:     aws.String(tf),
+					Types:         []*string{aws.String(TYPE)},
+					Severity: &securityhub.Severity{
+						Label: aws.String(securityhub.SeverityLabelInformational),
+					},
+					Remediation: &securityhub.Remediation{
+						Recommendation: &securityhub.Recommendation{
+							Text: aws.String(check.Remediation),
+						},
+					},
+					ProductFields: map[string]*string{
+						"Reason":          aws.String(check.Reason),
+						"Actual result":   aws.String(actualValue),
+						"Expected result": aws.String(check.ExpectedResult),
+						"Section":         aws.String(fmt.Sprintf("%s %s", controls.ID, controls.Text)),
+						"Subsection":      aws.String(fmt.Sprintf("%s %s", g.ID, g.Text)),
+					},
+					Resources: []*securityhub.Resource{
+						{
+							Id:   aws.String(c),
+							Type: aws.String(TYPE),
+						},
+					},
+					Compliance: &securityhub.Compliance{
+						Status:   aws.String(securityhub.ComplianceStatusPassed),
+		},
+				}
+				fs = append(fs, &f)
+			}
+
 		}
 	}
 	return fs, nil
